@@ -1,0 +1,4 @@
+cron:
+- description: latest updates
+  url: /
+  schedule: every 15 mins
