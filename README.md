@@ -32,7 +32,7 @@ This script is hosted on Google App Engine, with cron job (every 15 minutes).
  * `sender_address = 'admin@dturm-1021.appspotmail.com'  # : for e.g. 'foo@appname.appspotmail.com'`
  * `'YOUR_EMAIL_ADDRESS'`
 
-2. Deploy on [Google AppEngine](appengine.google.com)
+2. Deploy on [Google AppEngine](http://appengine.google.comm)
 
 ## Contributing
 
