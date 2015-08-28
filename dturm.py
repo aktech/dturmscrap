@@ -1,10 +1,11 @@
-# DTU Resume Manager Scrapper
+# DTU RM Scrapper
 
 import sys
-sys.path.insert(0, 'libs')   # Add libraries in the lib folder
+sys.path.insert(0, 'libs')
 
 import webapp2
 from google.appengine.api import mail
+from google.appengine.ext import db
 
 import pickle
 import logging
@@ -15,20 +16,15 @@ from bs4 import BeautifulSoup
 
 
 # Globals
-roll_no = 'YOUR_ROLL_NUMBER, e.g: 2K12/BR/001'
+roll_no = 'ROLL_NO'
 password = 'PASSWORD'
 rm_url = 'http://tnp.dtu.ac.in/rm3y/login.php'
-announce_style = ['color:#000000; font-family:Arial, Helvetica, sans-serif; '
-                  'margin-left:20px; overflow:auto; content:inherit; '
-                  'padding:10px;']
 
 # Email Details
-sender_address = 'admin@dturm-1021.appspotmail.com'  # application handle: 'dturm-1021'
-user_address = ['YOUR_EMAIL_ADDRESS']
+sender_address = 'admin@dturm-1021.appspotmail.com'
+user_address = ['dtu.amit@gmail.com', 'deepaksharma.2713@gmail.com',
+                'amit.mc.dtu@gmail.com']
 subject = 'DTU RM Notification'
-
-
-from google.appengine.ext import db
 
 
 class ObjectProperty(db.BlobProperty):
@@ -55,7 +51,7 @@ class ObjectProperty(db.BlobProperty):
 
 class MyEntity(db.Model):
     name = db.StringProperty()
-    obj = ObjectProperty()
+    obj = ObjectProperty()  # Kudos
 
 
 def open_browser(url):
@@ -91,24 +87,22 @@ def login(br, roll_no, password):
 
 def get_news(br, announce_style):
     soup = BeautifulSoup(br.response().read(), "lxml")
-    # TODO: Chose a better selection Method
-    announce_news_soup = soup.findAll('h4', {'style': announce_style[0]})
-
+    # announce_news_soup = soup.findAll('h4', {'style': announce_style[0]})
+    announce_news_soup = soup.find_all('h4', attrs = {'style' : True, 'align': False})
     if not announce_news_soup:
-        return ['Invalid announce_style']
-
-    def slice_news(s):
-        return s[133:-5]
-
-    def add_news_id(a):
-        for k, v in enumerate(a):
-            hsh = '#'
-            a[k] = ('UPDATE: {}{} \n' + a[k]).format(hsh, k+1)
-        return a
-    announce_news_str = map(str, announce_news_soup)
-    all_news = map(slice_news, announce_news_str)
-    all_news = add_news_id(all_news)
+        return ['Invalid scrap']
+    def get_contents(s):
+        return s.contents
+    announce_news_content = map(get_contents, announce_news_soup)
+    all_news = map(str, announce_news_content)
     return all_news
+
+
+def add_news_id(a):
+    for k, v in enumerate(a):
+        hsh = '#'
+        a[k] = ('UPDATE: {}{} \n' + a[k]).format(hsh, k+1)
+    return a
 
 
 def latest_news(all_news):
@@ -121,11 +115,13 @@ def latest_news(all_news):
         logging.info("Old News Empty")
     latestnews = [item for item in all_news if item not in old_news]
     logging.info('old_news: %s', old_news)
+    latestnews = add_news_id(latestnews)
     logging.info('latestnews: %s', latestnews)
     return latestnews
 
 
 def save_news(all_news):
+    db.delete(MyEntity.all(keys_only=True))
     entity = MyEntity(name="all_news", obj=all_news)
     entity.put()
 
@@ -144,13 +140,17 @@ def run_rmscrap():
     # GET News
     allnews = get_news(br, announce_style)
     latestnews = latest_news(allnews)
-    save_news(allnews)
+    if latestnews:
+        save_news(allnews)
+        logging.info('Saved News: %s', allnews)
 
     # SEND Latest News
     body = '\n'.join(latestnews)
     if body:
         mail.send_mail(sender_address, user_address, subject, body)
         logging.info("Mail Sent!")
+    else:
+        logging.info("No Latest News Found")
 
 
 app = webapp2.WSGIApplication([
