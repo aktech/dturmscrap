@@ -22,9 +22,33 @@ rm_url = 'http://tnp.dtu.ac.in/rm3y/login.php'
 
 # Email Details
 sender_address = 'admin@dturm-1021.appspotmail.com'
-user_address = ['dtu.amit@gmail.com', 'deepaksharma.2713@gmail.com',
-                'amit.mc.dtu@gmail.com']
+user_address = ['USER-EMAIL']
+
 subject = 'DTU RM Notification'
+
+
+# HTML Parser
+from HTMLParser import HTMLParser
+
+
+class MLStripper(HTMLParser):
+    def __init__(self):
+        self.reset()
+        self.strict = False
+        self.convert_charrefs = True
+        self.fed = []
+
+    def handle_data(self, d):
+        self.fed.append(d)
+
+    def get_data(self):
+        return ''.join(self.fed)
+
+
+def strip_tags(html):
+    s = MLStripper()
+    s.feed(html)
+    return s.get_data()
 
 
 class ObjectProperty(db.BlobProperty):
@@ -85,7 +109,7 @@ def login(br, roll_no, password):
     br.submit()
 
 
-def get_news(br, announce_style):
+def get_news(br, announce_style=None):
     soup = BeautifulSoup(br.response().read(), "lxml")
     # announce_news_soup = soup.findAll('h4', {'style': announce_style[0]})
     announce_news_soup = soup.find_all('h4', attrs = {'style' : True, 'align': False})
@@ -95,6 +119,7 @@ def get_news(br, announce_style):
         return s.contents
     announce_news_content = map(get_contents, announce_news_soup)
     all_news = map(str, announce_news_content)
+    all_news = map(strip_tags, all_news)
     return all_news
 
 
@@ -138,7 +163,7 @@ def run_rmscrap():
     login(br, roll_no, password)
 
     # GET News
-    allnews = get_news(br, announce_style)
+    allnews = get_news(br)
     latestnews = latest_news(allnews)
     if latestnews:
         save_news(allnews)
