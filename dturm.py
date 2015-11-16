@@ -1,4 +1,6 @@
 # DTU RM Scrapper
+# Author: AMiT Kumar <dtu.amit@gmail.com>
+# Version: 0.1
 
 import sys
 sys.path.insert(0, 'libs')
@@ -21,7 +23,7 @@ password = 'PASSWORD'
 rm_url = 'http://tnp.dtu.ac.in/rm3y/login.php'
 
 # Email Details
-sender_address = 'admin@dturm-1021.appspotmail.com'
+sender_address = 'admin@dturm-1021.appspotmail.com'  # This is based on your GAE ID
 user_address = ['USER-EMAIL']
 
 subject = 'DTU RM Notification'
@@ -110,7 +112,7 @@ def login(br, roll_no, password):
 
 
 def get_news(br, announce_style=None):
-    soup = BeautifulSoup(br.response().read(), "lxml")
+    soup = BeautifulSoup(br.response().read())
     # announce_news_soup = soup.findAll('h4', {'style': announce_style[0]})
     announce_news_soup = soup.find_all('h4', attrs = {'style' : True, 'align': False})
     if not announce_news_soup:
@@ -120,6 +122,7 @@ def get_news(br, announce_style=None):
     announce_news_content = map(get_contents, announce_news_soup)
     all_news = map(str, announce_news_content)
     all_news = map(strip_tags, all_news)
+    all_news = all_news[:25:]
     return all_news
 
 
